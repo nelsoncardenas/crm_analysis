@@ -1,16 +1,24 @@
+"""A module to evaluate a team of architects based on company-specific files.
+
+    Typical usage example:
+    from modules.team_evaluator import TeamEvaluator
+
+    evaluator = TeamEvaluator(conf)
+    evaluator.evaluate()
+"""
 from typing import Tuple, List, Set
 
 from openpyxl import load_workbook, Workbook
 
 
 class TeamEvaluator:
-    """A module to perform an architect team evaluation."""
+    """Class to evaluate a team of architects."""
 
     def __init__(self, conf: dict) -> None:
         """Initializes the instance.
 
         Args:
-            conf ([type]): configuration dictionary.
+            conf (str): configuration dictionary.
         """
         self.path_input = conf["PATHS"]["INPUT"]
         self.path_team = conf["PATHS"]["TEAM"]
