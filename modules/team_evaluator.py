@@ -1,46 +1,49 @@
+from typing import Tuple, List, Set
+
 from openpyxl import load_workbook, Workbook
 
 
 class TeamEvaluator:
     """A module to perform an architect team evaluation."""
 
-    def __init__(self, conf) -> None:
+    def __init__(self, conf: dict) -> None:
         """Initializes the instance.
 
         Args:
             conf ([type]): configuration dictionary.
         """
         self.path_input = conf["PATHS"]["INPUT"]
-        self.path_equipo = conf["PATHS"]["EQUIPO"]
+        self.path_team = conf["PATHS"]["TEAM"]
         self.path_output = conf["PATHS"]["OUTPUT"]
 
-        self.texto_ejecutada = conf["TEXTO_EJECUTADA"]
-        self.texto_programada = conf["TEXTO_PROGRAMADA"]
-        self.estado_map = conf["ESTADO_MAP"]
+        self.text_executed = conf["TEXT_EXECUTED"]
+        self.text_programmed = conf["TEXT_PROGRAMMED"]
+        self.state_map = conf["STATE_MAP"]
 
-        self.col_equipo = conf["COL_EQUIPO"]
-        self.col_ejecucion = conf["COL_EJECUCION"]
-        self.col_nombre = conf["COL_NOMBRE"]
-        self.col_estado = conf["COL_ESTADO"]
+        self.col_team = conf["COL_TEAM"]
+        self.col_execution = conf["COL_EXECUTION"]
+        self.col_name = conf["COL_NAME"]
+        self.col_state = conf["COL_STATE"]
 
-        self.equipo_preventa_list = list()
+        self.team_architect_list = list()
 
-        self.libro_input = load_workbook(self.path_input, data_only=True)
-        self.libro_equipo = load_workbook(self.path_equipo, data_only=True)
-        self.libro_output = Workbook()
+        self.book_input = load_workbook(self.path_input, data_only=True)
+        self.book_team = load_workbook(self.path_team, data_only=True)
+        self.book_output = Workbook()
 
-        self.hoja_input = self.libro_input["Hoja1"]
-        self.hoja_equipo = self.libro_equipo.active
-        self.hoja_output = self.libro_output.active
+        self.sheet_input = self.book_input["Hoja1"]
+        self.sheet_equipo = self.book_team.active
+        self.sheet_output = self.book_output.active
 
-        self.cont_errores = dict()
-        self.cont_ejecutadas = dict()
+        self.errors_counter = dict()
+        self.executed_counter = dict()
 
-        self.equipo_preventa_list, self.equipo_preventa_set = self._load_team()
+        self.team_architect_list, self.team_architect_set = self._load_team()
 
-        self.preventas_calificados = set()
+        self.architects_graded = set()
 
-    def evaluate(self):
+    def evaluate(self) -> None:
+        """Evaluates the architects team."""
         print("---------- Empezando el análisis ----------\n")
         print(
             "Advertencia, recuerda que el nombre de la persona en el archivo debe coincidir totalmente con el nombre en el CRM"
@@ -50,129 +53,130 @@ class TeamEvaluator:
         self._evaluate_execution()
         self._save_output_sheet()
 
-    def _load_team(self):
-        print("Loading team architects")
-        equipo_preventa_list = []
-        fila = 1
+    def _load_team(self) -> Tuple[List, Set]:
+        """Loads team member names to be analized."""
+        print("Cargando el equipo de arquitectos.")
+        team_architect_list = []
+        row = 1
         while True:
-            name = self.hoja_equipo.cell(row=fila, column=self.col_equipo).value
+            name = self.sheet_equipo.cell(row=row, column=self.col_team).value
             if name is None:
                 break
-            equipo_preventa_list.append(name)
-            fila += 1
-        equipo_preventa_list.sort()
-        equipo_preventa_set = set(equipo_preventa_list)
-        print(f"El equipo de preventa tiene un tamaño de {len(equipo_preventa_set)}.")
-        return equipo_preventa_list, equipo_preventa_set
+            team_architect_list.append(name)
+            row += 1
+        team_architect_list.sort()
+        team_architect_set = set(team_architect_list)
+        print(f"El equipo de preventa tiene un tamaño de {len(team_architect_set)}.")
+        return team_architect_list, team_architect_set
 
     def _error_analysis(self):
-        print("Generating data about errors.")
-        fila = 2
-        cell_to_validate = self.hoja_input.cell(row=fila, column=12).value
-        while cell_to_validate != None:
-            ejecucion = self.hoja_input.cell(row=fila, column=self.col_ejecucion).value
-            ejecucion = " ".join(ejecucion.split()[:4])
-            nombre = self.hoja_input.cell(row=fila, column=self.col_nombre).value
-            if (
-                ejecucion == self.texto_programada
-                and nombre in self.equipo_preventa_set
-            ):
-                estado = self.estado_map[
-                    self.hoja_input.cell(row=fila, column=self.col_estado).value
+        """Fills counters for executions and errors."""
+        print("Generando datos sobre errores.")
+        row = 2
+        cell_to_validate = self.sheet_input.cell(row=row, column=12).value
+        while cell_to_validate is not None:
+            execution = self.sheet_input.cell(row=row, column=self.col_execution).value
+            execution = " ".join(execution.split()[:4])
+            name = self.sheet_input.cell(row=row, column=self.col_name).value
+            if execution == self.text_programmed and name in self.team_architect_set:
+                state = self.state_map[
+                    self.sheet_input.cell(row=row, column=self.col_state).value
                 ]
-                nombre_estado = nombre + " + " + estado
-                self.cont_errores[nombre_estado] = (
-                    self.cont_errores.get(nombre_estado, 0) + 1
+                name_state = name + " + " + state
+                self.errors_counter[name_state] = (
+                    self.errors_counter.get(name_state, 0) + 1
                 )
-            if ejecucion == self.texto_ejecutada and nombre in self.equipo_preventa_set:
-                self.cont_ejecutadas[nombre] = self.cont_ejecutadas.get(nombre, 0) + 1
-            fila += 1
-            cell_to_validate = self.hoja_input.cell(row=fila, column=12).value
-        print(fila - 1, "líneas analizadas.")
+            if execution == self.text_executed and name in self.team_architect_set:
+                self.executed_counter[name] = self.executed_counter.get(name, 0) + 1
+            row += 1
+            cell_to_validate = self.sheet_input.cell(row=row, column=12).value
+        print(row - 1, "líneas analizadas.")
 
     def _evaluate_scheduled_and_posponed(self):
-        print("Evaluating schedule and posponed proposals.")
-        self.hoja_output.cell(row=1, column=1).value = "Nombre"
-        self.hoja_output.cell(row=1, column=2).value = "Puntaje"
-        self.hoja_output.cell(row=1, column=3).value = "Texto Errores"
+        """Evaluates scheduled and posponed related errors."""
+        print("Evaluando propuestas programadas y aplazadas.")
+        self.sheet_output.cell(row=1, column=1).value = "Nombre"
+        self.sheet_output.cell(row=1, column=2).value = "Puntaje"
+        self.sheet_output.cell(row=1, column=3).value = "Texto Errores"
 
-        errores_keys = list(self.cont_errores.keys())
+        errores_keys = list(self.errors_counter.keys())
         errores_keys.sort()
-        fila = 0
-        while fila < len(errores_keys):
+        row = 0
+        while row < len(errores_keys):
             architect_errors = 0
-            nombre, _, num_errores_actual, texto_errores = self._get_error_info(
-                errors_counter=self.cont_errores,
-                name_error=errores_keys[fila],
-                texto_errores="",
+            name, _, num_actual_errors, errors_text = self._get_error_info(
+                self.errors_counter, errores_keys[row]
             )
-            architect_errors += num_errores_actual
+            architect_errors += num_actual_errors
             if (
-                fila < len(errores_keys) - 1
-                and nombre == errores_keys[fila + 1].split(" + ")[0]
-            ):  # si en la siguiente posición es el mismo preventa
-                nombre, _, num_errores_actual, texto_errores = self._get_error_info(
-                    self.cont_errores, errores_keys[fila + 1], texto_errores
+                row < len(errores_keys) - 1
+                and name == errores_keys[row + 1].split(" + ")[0]
+            ):  # if the next position is the same architect
+                name, _, num_actual_errors, errors_text = self._get_error_info(
+                    self.errors_counter, errores_keys[row + 1], errors_text
                 )
-                architect_errors = architect_errors + num_errores_actual
-                fila += 1
-            puntaje = self._get_score(architect_errors)
-            self.preventas_calificados.update([nombre])
-            self.hoja_output.cell(
-                row=self.equipo_preventa_list.index(nombre) + 2, column=2
-            ).value = puntaje
-            self.hoja_output.cell(
-                row=self.equipo_preventa_list.index(nombre) + 2, column=3
-            ).value = texto_errores
-            fila += 1
+                architect_errors = architect_errors + num_actual_errors
+                row += 1
+            score = self._get_score(architect_errors)
+            self.architects_graded.update([name])
+            self.sheet_output.cell(
+                row=self.team_architect_list.index(name) + 2, column=2
+            ).value = score
+            self.sheet_output.cell(
+                row=self.team_architect_list.index(name) + 2, column=3
+            ).value = errors_text
+            row += 1
 
     def _get_error_info(
-        self, errors_counter: dict, name_error: str, texto_errores: str = ""
+        self, errors_counter: dict, name_error: str, errors_text: str = ""
     ):
-        nombre, error = name_error.split(" + ")
+        """Generates error variables to perform analysis and report errors as text."""
+        name, error = name_error.split(" + ")
         num_errores_actual = errors_counter[name_error]
-        texto_errores = f"{texto_errores} Tiene {num_errores_actual} preventas {error} incorrectamente."
-        return nombre, error, num_errores_actual, texto_errores
+        errors_text = f"{errors_text} Tiene {num_errores_actual} preventas {error} incorrectamente."  # noqa: E501
+        return name, error, num_errores_actual, errors_text
 
-    def _get_score(self, architect_errors: int):
+    def _get_score(self, architect_errors: int) -> float:
         if architect_errors == 0:
-            return 1
+            return 1.0
         elif 1 <= architect_errors <= 2:
             return 0.5
         else:
-            return 0
+            return 0.0
 
     def _evaluate_execution(self):
-        for nombre in self.equipo_preventa_list:
-            self.hoja_output.cell(
-                row=self.equipo_preventa_list.index(nombre) + 2, column=1
-            ).value = nombre
-            if nombre not in self.preventas_calificados:
-                self.hoja_output.cell(
-                    row=self.equipo_preventa_list.index(nombre) + 2, column=2
+        """Evaluates proposals execution"""
+        print("Evaluando ejecución de propuestas.")
+        for name in self.team_architect_list:
+            self.sheet_output.cell(
+                row=self.team_architect_list.index(name) + 2, column=1
+            ).value = name
+            if name not in self.architects_graded:
+                self.sheet_output.cell(
+                    row=self.team_architect_list.index(name) + 2, column=2
                 ).value = 1
-            if nombre not in self.cont_ejecutadas:
-                self.hoja_output.cell(
-                    row=self.equipo_preventa_list.index(nombre) + 2, column=2
+            if name not in self.executed_counter:
+                self.sheet_output.cell(
+                    row=self.team_architect_list.index(name) + 2, column=2
                 ).value = 0
-                # Si está vacía la celda
                 celda_errores = str(
-                    self.hoja_output.cell(
-                        row=self.equipo_preventa_list.index(nombre) + 2, column=3
+                    self.sheet_output.cell(
+                        row=self.team_architect_list.index(name) + 2, column=3
                     ).value
                 )
                 if celda_errores == "None":
-                    self.hoja_output.cell(
-                        row=self.equipo_preventa_list.index(nombre) + 2, column=3
+                    self.sheet_output.cell(
+                        row=self.team_architect_list.index(name) + 2, column=3
                     ).value = "No ha ejecutado preventas en las últimas dos semanas"
                 else:
-                    self.hoja_output.cell(
-                        row=self.equipo_preventa_list.index(nombre) + 2, column=3
+                    self.sheet_output.cell(
+                        row=self.team_architect_list.index(name) + 2, column=3
                     ).value = (
                         celda_errores
                         + " No han ejecutado preventas en las últimas dos semanas."
                     )
 
     def _save_output_sheet(self):
-        self.libro_output.save(self.path_output)
-        print("Programa ejecutado correctamente.")
+        print(f"Guardando el resultado en {self.path_output}")
+        self.book_output.save(self.path_output)
+        print("\n¡Programa ejecutado correctamente!")

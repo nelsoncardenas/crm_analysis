@@ -1,17 +1,17 @@
 {
     "PATHS": {
         "INPUT": "1input.xlsx",
-        "EQUIPO": "equipo_preventa.xlsx",
+        "TEAM": "equipo_preventa.xlsx",
         "OUTPUT": "2output.xlsx"
     },
-    "TEXTO_EJECUTADA": "Ejecutó una preventa la",
-    "TEXTO_PROGRAMADA": "La preventa está programada",
-    "ESTADO_MAP": {
+    "TEXT_EXECUTED": "Ejecutó una preventa la",
+    "TEXT_PROGRAMMED": "La preventa está programada",
+    "STATE_MAP": {
         "Programado": "programadas",
         "Aplazado": "aplazadas"
     },
-    "COL_EQUIPO": 1,
-    "COL_EJECUCION": 32,
-    "COL_NOMBRE": 10,
-    "COL_ESTADO": 11
+    "COL_TEAM": 1,
+    "COL_EXECUTION": 32,
+    "COL_NAME": 10,
+    "COL_STATE": 11
 }
