@@ -100,21 +100,23 @@ class TeamEvaluator:
         errores_keys.sort()
         fila = 0
         while fila < len(errores_keys):
-            errores_preventa = 0
+            architect_errors = 0
             nombre, _, num_errores_actual, texto_errores = self._get_error_info(
-                self.cont_errores, errores_keys[fila]
+                errors_counter=self.cont_errores,
+                name_error=errores_keys[fila],
+                texto_errores="",
             )
-            errores_preventa += num_errores_actual
+            architect_errors += num_errores_actual
             if (
                 fila < len(errores_keys) - 1
                 and nombre == errores_keys[fila + 1].split(" + ")[0]
             ):  # si en la siguiente posición es el mismo preventa
-                nombre, _, num_errores_actual, texto_errores = self.analizar_error(
+                nombre, _, num_errores_actual, texto_errores = self._get_error_info(
                     self.cont_errores, errores_keys[fila + 1], texto_errores
                 )
-                errores_preventa = errores_preventa + num_errores_actual
+                architect_errors = architect_errors + num_errores_actual
                 fila += 1
-            puntaje = self._get_score(errores_preventa)
+            puntaje = self._get_score(architect_errors)
             self.preventas_calificados.update([nombre])
             self.hoja_output.cell(
                 row=self.equipo_preventa_list.index(nombre) + 2, column=2
@@ -124,13 +126,15 @@ class TeamEvaluator:
             ).value = texto_errores
             fila += 1
 
-    def _get_error_info(errors_counter: dict, name_error: str, texto_errores: str = ""):
+    def _get_error_info(
+        self, errors_counter: dict, name_error: str, texto_errores: str = ""
+    ):
         nombre, error = name_error.split(" + ")
         num_errores_actual = errors_counter[name_error]
         texto_errores = f"{texto_errores} Tiene {num_errores_actual} preventas {error} incorrectamente."
         return nombre, error, num_errores_actual, texto_errores
 
-    def _get_score(architect_errors: int):
+    def _get_score(self, architect_errors: int):
         if architect_errors == 0:
             return 1
         elif 1 <= architect_errors <= 2:
