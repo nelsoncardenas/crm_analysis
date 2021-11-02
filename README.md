@@ -21,6 +21,6 @@ pip install openpyxl
 python crm_analysis.py
 ```
 
-## Security
+## Disclaimer
 
 All information was made anonymous to avoid conflicts of interest. This is just a sample of the workflow, without compromising the true business logic.
