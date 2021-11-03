@@ -147,10 +147,9 @@ class TeamEvaluator:
     def _get_score(self, architect_errors: int) -> float:
         if architect_errors == 0:
             return 1.0
-        elif 1 <= architect_errors <= 2:
+        if 1 <= architect_errors <= 2:
             return 0.5
-        else:
-            return 0.0
+        return 0.0
 
     def _evaluate_execution(self):
         """Evaluates proposals execution"""
